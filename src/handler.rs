@@ -6,16 +6,20 @@ use mlua::{Function, Lua, Table};
 #[derive(Debug)]
 /// A handler for a type of identifier. This is derived from the Lua plugin for this handler.
 ///
-/// * `name`:  The name of the handler.
 /// * `lua`:   The resulting Lua instance
 /// * `table`: The full returned Lua table.
+/// * `name`:  The name of the handler.
+/// * `priority`: This defines the ordering of handlers; the lower the number, the sooner it is
+/// tried. For now, this is defined in the plugin itself; however, this could eventually be
+/// overridable in a config if one is ever implemented.
 /// * `parse`: The Lua function which parses the identifier.
 /// * `fetch`: The Lua function which fetches the metadata for the identifier.
 pub struct Handler {
-    pub name: String,
     // We need this to persist the table and functions
     lua: Lua,
     table: Table,
+    pub name: String,
+    pub priority: u8,
     pub parse: Function,
     pub fetch: Function,
 }
@@ -24,18 +28,6 @@ impl TryFrom<PathBuf> for Handler {
     type Error = anyhow::Error;
     fn try_from(path: PathBuf) -> anyhow::Result<Self> {
         // TODO: Figure out a better way to handle this other than unwrap_or_default()
-        let name = path
-            .to_str()
-            .unwrap_or_default()
-            // Get rid of extension
-            .split('.')
-            .nth(0)
-            .unwrap_or_default()
-            // Get rid of any directory
-            .split('/')
-            .next_back()
-            .unwrap_or_default()
-            .to_string();
         let lua = Lua::new();
         let fetch = lua.create_function(move |lua, url: String| {
             let resp = ureq::get(&url)
@@ -97,12 +89,16 @@ impl TryFrom<PathBuf> for Handler {
 
         let parse = table.get("parse")?;
         let fetch = table.get("fetch")?;
-        Ok(Handler {
+        let info: Table = table.get("info")?;
+        let name = info.get("name")?;
+        let priority = info.get("priority")?;
+        Ok(dbg!(Handler {
             lua,
             name,
             table,
             parse,
             fetch,
-        })
+            priority,
+        }))
     }
 }

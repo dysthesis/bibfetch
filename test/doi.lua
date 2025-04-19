@@ -1,8 +1,11 @@
 local M = {}
 
+M.info = {
+  name = "doi",
+  priority = "0",
+}
+
 local DOI_PATTERN = "%f[%w]10%.%d%d%d%d+/[^%s&\"']*[^%s&\"'.,]"
-
-
 
 --- Split the URL on ? or # so fragments or queries don't corrupt the DOI match
 ---@param url string The URL to clean
