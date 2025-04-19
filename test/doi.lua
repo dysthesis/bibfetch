@@ -65,7 +65,6 @@ function M.fetch(doi)
     publisher = data.publisher,
     url       = data.URL,
   }
-  print(dump(result))
   return result
 end
 

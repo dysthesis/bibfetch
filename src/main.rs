@@ -1,6 +1,7 @@
 use std::{collections::BinaryHeap, path::PathBuf};
 
 use mlua::Table;
+use serde_json::json;
 
 use crate::{
     cli::{Args, HandlersPath},
@@ -29,7 +30,9 @@ fn main() -> anyhow::Result<()> {
         })
         .collect();
 
-    println!("{results:?}");
+    let json = json!(results);
+
+    println!("{}", json.to_string());
 
     Ok(())
 }

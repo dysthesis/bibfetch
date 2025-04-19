@@ -112,13 +112,13 @@ impl TryFrom<PathBuf> for Handler {
         let info: Table = table.get("info")?;
         let name = info.get("name")?;
         let priority = info.get("priority")?;
-        Ok(dbg!(Handler {
+        Ok(Handler {
             lua,
             name,
             table,
             parse,
             fetch,
             priority,
-        }))
+        })
     }
 }
