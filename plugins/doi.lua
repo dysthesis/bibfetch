@@ -54,6 +54,11 @@ function M.fetch(doi)
     error("Fetch failed for DOI: " .. doi)
   end
 
+
+  local urls = {}
+  for k, v in pairs(data.link) do
+    urls[k] = v.URL
+  end
   -- Extract and reshape fields for BibFetch
   local result = {
     doi       = doi,
@@ -63,7 +68,9 @@ function M.fetch(doi)
     year      = (data.published and data.published["date-parts"]
       and data.published["date-parts"][1][1]) or nil,
     publisher = data.publisher,
-    url       = data.URL,
+
+    -- Links to content
+    urls      = urls,
   }
   return result
 end
