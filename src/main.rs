@@ -1,21 +1,53 @@
-use std::{collections::BinaryHeap, path::PathBuf};
+use std::{collections::BinaryHeap, env, path::PathBuf};
 
 use anyhow::anyhow;
-use mlua::Table;
 use serde_json::json;
 
 use crate::{
-    cli::{Args, HandlersPath},
+    cli::{Args},
     handler::Handler,
 };
+
+const DEFAULT_HANDLERS_ENV_KEY: &str = "BIBFETCH_HANDLERS_DIR";
+#[derive(Debug)]
+/// Ensure that the path to the handlers exist
+pub struct HandlersPath(PathBuf);
+
+impl Into<PathBuf> for HandlersPath {
+    fn into(self) -> PathBuf {
+        self.0
+    }
+}
+
+impl TryFrom<String> for HandlersPath {
+    type Error = anyhow::Error;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let path = PathBuf::from(value);
+
+        if !path.exists() {
+            return Err(anyhow!("Path to handlers does not exist!"));
+        }
+
+        if !path.is_dir() {
+            return Err(anyhow!("Path to handlers must be a directory!"));
+        }
+
+        Ok(HandlersPath(path))
+    }
+}
 
 mod cli;
 mod handler;
 mod builtins;
 
+
 fn main() -> anyhow::Result<()> {
     let args = Args::parse()?;
-    let handlers = init_handlers(args.handlers_path).unwrap();
+    let handlers_path: String = args.handlers_path.unwrap_or( env::var(DEFAULT_HANDLERS_ENV_KEY).map_err(|_| anyhow!("The environment variable {DEFAULT_HANDLERS_ENV_KEY} is not set!"))?);
+    let handlers_path = HandlersPath::try_from(handlers_path)?;
+    let handlers = init_handlers(handlers_path).unwrap();
+
 
     let results: Vec<serde_json::Value> = 
         // Check for explicit mention of a specific handler
