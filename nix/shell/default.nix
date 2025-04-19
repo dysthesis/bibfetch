@@ -1,6 +1,10 @@
 pkgs:
 pkgs.mkShell {
   name = "bibfetch";
+  buildInputs = with pkgs; [
+    pkg-config
+    luajit
+  ];
   packages = with pkgs; [
     nixd
     alejandra
