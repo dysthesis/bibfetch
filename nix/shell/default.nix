@@ -17,4 +17,5 @@ pkgs.mkShell {
     pkg-config
     lua-language-server
   ];
+  BIBFETCH_HANDLERS_DIR = ../../plugins/.;
 }
