@@ -1,5 +1,6 @@
 use std::{collections::BinaryHeap, path::PathBuf};
 
+use anyhow::anyhow;
 use mlua::Table;
 use serde_json::json;
 
@@ -14,21 +15,42 @@ mod handler;
 fn main() -> anyhow::Result<()> {
     let args = Args::parse()?;
     let handlers = init_handlers(args.handlers_path).unwrap();
-    let results: Vec<Table> = args
-        .identifiers
-        .iter()
-        .filter_map(|id| {
-            let mut result = None;
-            for handler in &handlers {
-                if let Ok(Some(parsed)) = handler.parse.call::<Option<String>>(id.clone()) {
-                    result = handler.fetch.call::<Table>(parsed).ok();
-                    break;
-                }
-            }
 
-            result
-        })
-        .collect();
+    let results: Vec<serde_json::Value> = 
+        // Check for explicit mention of a specific handler
+        if let Some(name) = args.handler {
+        let filtered: Vec<Handler> = handlers
+            .into_iter()
+            .filter(|handler| handler.name == name)
+            .collect();
+        let handler = filtered
+            .first()
+            .ok_or(anyhow!(format!("Failed to get handler called {name}")))?;
+
+        args.identifiers
+            .iter()
+            .filter_map(|id| {
+                let parsed = handler.parse(id.clone()).ok()?;
+                handler.fetch(parsed).ok()
+            })
+            .collect()
+    } 
+    // otherwise, try and guess
+        else {
+        args.identifiers
+            .iter()
+            .filter_map(|id| {
+                let mut result = None;
+                for handler in &handlers {
+                    if let Ok(parsed) = handler.parse(id.clone()) {
+                        result = handler.fetch(parsed).ok();
+                        break;
+                    }
+                }
+                result
+            })
+            .collect()
+    };
 
     let json = json!(results);
 
