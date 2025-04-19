@@ -2,6 +2,7 @@ use std::{fs::read_to_string, path::PathBuf};
 
 use anyhow::anyhow;
 use mlua::{Function, Lua, Table};
+use serde_json::json;
 
 #[derive(Debug)]
 /// A handler for a type of identifier. This is derived from the Lua plugin for this handler.
@@ -18,10 +19,22 @@ pub struct Handler {
     // We need this to persist the table and functions
     lua: Lua,
     table: Table,
+    parse: Function,
+    fetch: Function,
     pub name: String,
     pub priority: u8,
-    pub parse: Function,
-    pub fetch: Function,
+}
+
+impl Handler {
+    pub fn parse(&self, id: String) -> anyhow::Result<String> {
+        self.parse
+            .call::<Option<String>>(id)?
+            .ok_or(anyhow!("Cannot parse with this handler!"))
+    }
+    pub fn fetch(&self, id: String) -> anyhow::Result<serde_json::Value> {
+        let res = self.fetch.call::<Table>(id)?;
+        Ok(json!(res))
+    }
 }
 
 impl Ord for Handler {
