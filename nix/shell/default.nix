@@ -9,5 +9,8 @@ pkgs.mkShell {
     cargo
     rustToolchains.nightly
     bacon
+    luajit
+    pkg-config
+    lua-language-server
   ];
 }

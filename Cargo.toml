@@ -6,3 +6,5 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.98"
 lexopt = "0.3.1"
+mlua = { version = "0.10.3", features = ["anyhow", "luajit"] }
+rayon = "1.10.0"
