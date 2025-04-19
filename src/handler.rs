@@ -24,6 +24,26 @@ pub struct Handler {
     pub fetch: Function,
 }
 
+impl Ord for Handler {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        other.priority.cmp(&self.priority)
+    }
+}
+
+impl PartialOrd for Handler {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for Handler {
+    fn eq(&self, other: &Self) -> bool {
+        self.priority == other.priority
+    }
+}
+
+impl Eq for Handler {}
+
 impl TryFrom<PathBuf> for Handler {
     type Error = anyhow::Error;
     fn try_from(path: PathBuf) -> anyhow::Result<Self> {

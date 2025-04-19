@@ -38,6 +38,7 @@ pub fn init_handlers(path: HandlersPath) -> anyhow::Result<Vec<Handler>> {
         .filter_map(|x| x.ok())
         .map(|entry| Handler::try_from(entry.path()))
         .filter_map(|x| x.ok())
-        .collect::<Vec<Handler>>();
+        .collect::<BinaryHeap<Handler>>()
+        .into_sorted_vec();
     Ok(result)
 }
