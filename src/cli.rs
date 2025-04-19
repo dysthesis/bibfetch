@@ -2,8 +2,6 @@
 
 use anyhow::anyhow;
 
-const DEFAULT_HANDLERS_PATH: &str = "~/.config/bibfetch/handlers";
-
 #[derive(Debug)]
 /// Command-line arguments.
 ///
