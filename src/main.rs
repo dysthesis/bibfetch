@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use anyhow::Ok;
+use mlua::Table;
 
 use crate::{
     cli::{Args, HandlersPath},
@@ -12,8 +13,21 @@ mod handler;
 
 fn main() -> anyhow::Result<()> {
     let args = Args::parse()?;
-    println!("Found command-line arguments {args:?}");
     let handlers = init_handlers(args.handlers_path).unwrap();
+    let results: Vec<Table> = args
+        .identifiers
+        .iter()
+        .map(|id| {
+            let handler = handlers.first().expect("No handlers found!");
+            let parsed = handler
+                .parse
+                .call::<Option<String>>(id.clone())
+                .unwrap_or_else(|e| panic!("Failed to parse with handler {}: {}", handler.name, e))
+                .unwrap();
+            handler.fetch.call::<Table>(parsed).unwrap()
+        })
+        .collect();
+
     Ok(())
 }
 
