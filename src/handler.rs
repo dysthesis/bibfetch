@@ -64,7 +64,7 @@ impl TryFrom<PathBuf> for Handler {
     fn try_from(path: PathBuf) -> anyhow::Result<Self> {
         // TODO: Figure out a better way to handle this other than unwrap_or_default()
         let lua = Lua::new();
-        let request = Builtin::from(format!("request"), move |lua, url: String| {
+        let request = Builtin::from("request".to_string(), move |lua, url: String| {
             let resp = ureq::get(&url)
                 .header("Accept", "application/json")
                 .call()

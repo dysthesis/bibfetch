@@ -1,6 +1,7 @@
 use std::{collections::BinaryHeap, env, path::PathBuf};
 
 use anyhow::anyhow;
+use rayon::iter::{ParallelIterator,IntoParallelRefIterator};
 use serde_json::json;
 
 use crate::{
@@ -61,7 +62,7 @@ fn main() -> anyhow::Result<()> {
             .ok_or(anyhow!(format!("Failed to get handler called {name}")))?;
 
         args.identifiers
-            .iter()
+            .par_iter()
             .filter_map(|id| {
                 let parsed = handler.parse(id.clone()).ok()?;
                 handler.fetch(parsed).ok()
@@ -71,7 +72,7 @@ fn main() -> anyhow::Result<()> {
     // otherwise, try and guess
         else {
         args.identifiers
-            .iter()
+            .par_iter()
             .filter_map(|id| {
                 let mut result = None;
                 for handler in &handlers {
@@ -87,7 +88,7 @@ fn main() -> anyhow::Result<()> {
 
     let json = json!(results);
 
-    println!("{}", json.to_string());
+    println!("{json}");
 
     Ok(())
 }
