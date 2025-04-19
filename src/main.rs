@@ -1,6 +1,5 @@
-use std::path::PathBuf;
+use std::{collections::BinaryHeap, path::PathBuf};
 
-use anyhow::Ok;
 use mlua::Table;
 
 use crate::{
@@ -17,16 +16,20 @@ fn main() -> anyhow::Result<()> {
     let results: Vec<Table> = args
         .identifiers
         .iter()
-        .map(|id| {
-            let handler = handlers.first().expect("No handlers found!");
-            let parsed = handler
-                .parse
-                .call::<Option<String>>(id.clone())
-                .unwrap_or_else(|e| panic!("Failed to parse with handler {}: {}", handler.name, e))
-                .unwrap();
-            handler.fetch.call::<Table>(parsed).unwrap()
+        .filter_map(|id| {
+            let mut result = None;
+            for handler in &handlers {
+                if let Ok(Some(parsed)) = handler.parse.call::<Option<String>>(id.clone()) {
+                    result = handler.fetch.call::<Table>(parsed).ok();
+                    break;
+                }
+            }
+
+            result
         })
         .collect();
+
+    println!("{results:?}");
 
     Ok(())
 }
