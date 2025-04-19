@@ -11,6 +11,7 @@ use crate::{
 
 mod cli;
 mod handler;
+mod builtins;
 
 fn main() -> anyhow::Result<()> {
     let args = Args::parse()?;

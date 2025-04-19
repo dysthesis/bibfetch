@@ -4,6 +4,8 @@ use anyhow::anyhow;
 use mlua::{Function, Lua, Table};
 use serde_json::json;
 
+use crate::builtins::Builtin;
+
 #[derive(Debug)]
 /// A handler for a type of identifier. This is derived from the Lua plugin for this handler.
 ///
@@ -62,7 +64,7 @@ impl TryFrom<PathBuf> for Handler {
     fn try_from(path: PathBuf) -> anyhow::Result<Self> {
         // TODO: Figure out a better way to handle this other than unwrap_or_default()
         let lua = Lua::new();
-        let fetch = lua.create_function(move |lua, url: String| {
+        let request = Builtin::from(format!("request"), move |lua, url: String| {
             let resp = ureq::get(&url)
                 .header("Accept", "application/json")
                 .call()
@@ -74,21 +76,6 @@ impl TryFrom<PathBuf> for Handler {
             // Parse JSON into serde_json::Value
             let json: serde_json::Value = serde_json::from_str(&resp).map_err(|e| anyhow!(e))?;
 
-            // // Convert JSON object into a Lua table
-            // let table = lua.create_table()?;
-            // if let serde_json::Value::Object(map) = json {
-            //     for (k, v) in map {
-            //         let val = match v {
-            //             serde_json::Value::String(s) => mlua::Value::String(lua.create_string(&s)?),
-            //             serde_json::Value::Number(n) => {
-            //                 mlua::Value::Number(n.as_f64().unwrap_or_default())
-            //             }
-            //             serde_json::Value::Bool(b) => mlua::Value::Boolean(b),
-            //             _ => mlua::Value::Nil,
-            //         };
-            //         table.set(k, val)?;
-            //     }
-            // }
             let target = json.get("message").unwrap_or(&json);
 
             fn to_lua(lua: &Lua, v: &serde_json::Value) -> Result<mlua::Value, mlua::Error> {
@@ -116,8 +103,10 @@ impl TryFrom<PathBuf> for Handler {
                 }
             }
             to_lua(lua, target)
-        })?;
-        lua.globals().set("fetch", fetch)?;
+        });
+
+        request.register(&lua)?;
+
         let table: Table = lua.load(read_to_string(path)?).eval()?;
 
         let parse = table.get("parse")?;

@@ -49,7 +49,7 @@ function M.fetch(doi)
   local url = "https://api.crossref.org/works/" .. doi
 
   -- 2. Delegate HTTP & JSON to the Rust function
-  local data = fetch(url)
+  local data = request(url)
   if not data then
     error("Fetch failed for DOI: " .. doi)
   end
