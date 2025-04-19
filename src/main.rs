@@ -41,7 +41,7 @@ impl TryFrom<String> for HandlersPath {
 mod cli;
 mod handler;
 mod builtins;
-
+mod plugin;
 
 fn main() -> anyhow::Result<()> {
     let args = Args::parse()?;

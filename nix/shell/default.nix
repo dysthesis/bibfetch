@@ -1,4 +1,8 @@
-pkgs:
+{
+  pkgs,
+  self,
+  ...
+}:
 pkgs.mkShell {
   name = "bibfetch";
   buildInputs = with pkgs; [
@@ -16,6 +20,6 @@ pkgs.mkShell {
     luajit
     pkg-config
     lua-language-server
+    (self.packages.${system}.bibfetch.withHandlers (h: [h.doi]))
   ];
-  BIBFETCH_HANDLERS_DIR = ../../plugins/.;
 }

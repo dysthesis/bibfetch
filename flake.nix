@@ -68,7 +68,7 @@
   in
     # Budget flake-parts
     mapAttrs (_: val: forAllSystems val) {
-      devShells = pkgs: {default = import ./nix/shell pkgs;};
+      devShells = pkgs: {default = import ./nix/shell {inherit pkgs self;};};
       # for `nix fmt`
       formatter = pkgs: treefmt.${pkgs.system}.config.build.wrapper;
       # for `nix flake check`
