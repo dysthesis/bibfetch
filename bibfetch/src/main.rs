@@ -6,7 +6,7 @@ use serde_json::json;
 
 use crate::{
     cli::Args,
-    handler::{Handler, HandlersPath},
+    handler::{CheckedPath, Handler}, plugin::Plugin,
 };
 
 const DEFAULT_HANDLERS_ENV_KEY: &str = "BIBFETCH_HANDLERS_DIR";
@@ -19,9 +19,17 @@ mod plugin;
 
 fn main() -> anyhow::Result<()> {
     let args = Args::parse()?;
+
+    // set up handlers
     let handlers_path: String = args.handlers_path.unwrap_or( env::var(DEFAULT_HANDLERS_ENV_KEY).map_err(|_| anyhow!("The environment variable {DEFAULT_HANDLERS_ENV_KEY} is not set!"))?);
-    let handlers_path = HandlersPath::try_from(handlers_path)?;
+    let handlers_path = CheckedPath::try_from(handlers_path)?;
     let handlers = init_handlers(handlers_path).unwrap();
+
+
+    // set up plugins
+    let plugins_path: String = args.plugins_path.unwrap_or(env::var(DEFAULT_PLUGINS_ENV_KEY).map_err(|_| anyhow!("The environment variable {DEFAULT_PLUGINS_ENV_KEY} is not set!"))?);
+    let plugins_path = CheckedPath::try_from(plugins_path)?;
+    let plugins = init_plugins(plugins_path)?;
 
 
     let results: Vec<serde_json::Value> = 
@@ -67,7 +75,7 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn init_handlers(path: HandlersPath) -> anyhow::Result<Vec<Handler>> {
+pub fn init_handlers(path: CheckedPath) -> anyhow::Result<Vec<Handler>> {
     let path: PathBuf = path.into();
     let result = path
         .read_dir()?
@@ -79,3 +87,13 @@ pub fn init_handlers(path: HandlersPath) -> anyhow::Result<Vec<Handler>> {
     Ok(result)
 }
 
+pub fn init_plugins(path: CheckedPath) -> anyhow::Result<Vec<Plugin>> {
+    let path: PathBuf = path.into();
+    let res = path.read_dir()?.filter_map(|entry| match entry {
+        Ok(file) => Plugin::try_from(file.path()).ok(),
+        // TODO: Figure out proper error handling instead of ignoring this
+        Err(_) => None,
+    }).collect();
+
+    Ok(res)
+}

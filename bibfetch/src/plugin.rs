@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::anyhow;
 
-struct Plugin {
+pub struct Plugin {
     name: String,
     instance: wasmtime::Instance,
 }

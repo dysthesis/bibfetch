@@ -127,28 +127,24 @@ impl TryFrom<PathBuf> for Handler {
 
 #[derive(Debug)]
 /// Ensure that the path to the handlers exist
-pub struct HandlersPath(PathBuf);
+pub struct CheckedPath(PathBuf);
 
-impl From<HandlersPath> for PathBuf {
-    fn from(val: HandlersPath) -> Self {
+impl From<CheckedPath> for PathBuf {
+    fn from(val: CheckedPath) -> Self {
         val.0
     }
 }
 
-impl TryFrom<String> for HandlersPath {
+impl TryFrom<String> for CheckedPath {
     type Error = anyhow::Error;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         let path = PathBuf::from(value);
 
         if !path.exists() {
-            return Err(anyhow!("Path to handlers does not exist!"));
+            return Err(anyhow!("Path does not exist!"));
         }
 
-        if !path.is_dir() {
-            return Err(anyhow!("Path to handlers must be a directory!"));
-        }
-
-        Ok(HandlersPath(path))
+        Ok(CheckedPath(path))
     }
 }
