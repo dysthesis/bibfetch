@@ -20,6 +20,7 @@ pkgs.mkShell {
     luajit
     pkg-config
     lua-language-server
-    (self.packages.${system}.bibfetch.withHandlers (h: [h.doi]))
+    wit-bindgen
+    # (self.packages.${system}.bibfetch.withHandlers (h: [h.doi]))
   ];
 }

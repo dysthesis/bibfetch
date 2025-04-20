@@ -71,6 +71,7 @@ dependencies = [
  "anyhow",
  "lexopt",
  "mlua",
+ "parking_lot",
  "rayon",
  "serde_json",
  "ureq",

@@ -1,3 +1,4 @@
+# cargo-features = ["trait_alias"]
 [workspace]
 resolver = "2"
 members = ["bibfetch", "bibfetch-request"]

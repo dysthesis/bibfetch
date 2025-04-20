@@ -1,10 +1,11 @@
-use std::{fs::read_to_string, path::PathBuf};
+use std::{fs::read_to_string, path::PathBuf, sync::Arc};
 
 use anyhow::anyhow;
 use mlua::{Function, Lua, Table};
+use parking_lot::Mutex;
 use serde_json::json;
 
-use crate::builtins::Builtin;
+use crate::{builtins::Builtin, plugin::Plugin};
 
 #[derive(Debug)]
 /// A handler for a type of identifier. This is derived from the Lua plugin for this handler.
@@ -36,6 +37,32 @@ impl Handler {
     pub fn fetch(&self, id: String) -> anyhow::Result<serde_json::Value> {
         let res = self.fetch.call::<Table>(id)?;
         Ok(json!(res))
+    }
+    pub fn with_plugins(path: PathBuf, plugins: Vec<Plugin>) -> anyhow::Result<Self> {
+        let lua = Lua::new();
+
+        // Initialise plugins
+        let results: anyhow::Result<()> = plugins
+            .into_iter()
+            .try_for_each(|p| Plugin::register(Arc::new(Mutex::new(p)), &lua));
+
+        results?;
+
+        let table: Table = lua.load(read_to_string(path)?).eval()?;
+
+        let parse = table.get("parse")?;
+        let fetch = table.get("fetch")?;
+        let info: Table = table.get("info")?;
+        let name = info.get("name")?;
+        let priority = info.get("priority")?;
+        Ok(Handler {
+            lua,
+            name,
+            table,
+            parse,
+            fetch,
+            priority,
+        })
     }
 }
 

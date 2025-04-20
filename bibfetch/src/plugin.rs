@@ -1,10 +1,14 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 use anyhow::anyhow;
+use parking_lot::Mutex;
 
+use crate::conversion::{ComponentValExt, LuaValueExt};
+
+#[derive(Clone)]
 pub struct Plugin {
-    name: String,
-    instance: wasmtime::component::Instance,
+    pub name: String,
+    pre: wasmtime::component::InstancePre<()>,
 }
 
 impl TryFrom<PathBuf> for Plugin {
@@ -25,11 +29,82 @@ impl TryFrom<PathBuf> for Plugin {
 
         let engine = wasmtime::Engine::new(&config)?;
         let component = wasmtime::component::Component::from_file(&engine, path)?;
-        let store = wasmtime::Store::new(&engine, ());
         let linker = wasmtime::component::Linker::new(&engine);
 
-        let instance = linker.instantiate(store, &component)?;
+        let pre = linker.instantiate_pre(&component)?;
 
-        Ok(Plugin { name, instance })
+        Ok(Plugin { name, pre })
+    }
+}
+
+impl Plugin {
+    pub fn get_typed_func<Params, Results>(
+        &mut self,
+        name: impl wasmtime::component::InstanceExportLookup,
+    ) -> anyhow::Result<wasmtime::component::TypedFunc<Params, Results>>
+    where
+        Params: wasmtime::component::ComponentNamedList + wasmtime::component::Lower,
+        Results: wasmtime::component::ComponentNamedList + wasmtime::component::Lift,
+    {
+        let mut store = wasmtime::Store::new(&self.pre.engine(), ());
+        self.pre
+            .instantiate(&mut store)?
+            .get_typed_func::<Params, Results>(&mut store, name)
+    }
+
+    pub fn get_func(
+        &mut self,
+        name: impl wasmtime::component::InstanceExportLookup,
+    ) -> anyhow::Result<wasmtime::component::Func> {
+        let mut store = wasmtime::Store::new(&self.pre.engine(), ());
+        let res = self
+            .pre
+            .instantiate(&mut store)
+            .map_err(|e| anyhow!("Failed to instantiate plugin: {e}"))?
+            .get_func(&mut store, name)
+            .ok_or_else(|| anyhow!("Function does not exist"))?;
+        Ok(res)
+    }
+
+    pub fn call(
+        &mut self,
+        params: &[wasmtime::component::Val],
+        results: &mut [wasmtime::component::Val],
+    ) -> anyhow::Result<()> {
+        let mut store = wasmtime::Store::new(&self.pre.engine(), ());
+        self.get_func(self.name.clone())?
+            .call(&mut store, params, results)
+    }
+
+    pub fn register(this: Arc<Mutex<Self>>, lua: &mlua::Lua) -> anyhow::Result<()> {
+        let name = {
+            let guard = this.lock();
+            guard.name.clone()
+        };
+
+        let plugin_handle = Arc::clone(&this);
+
+        let f = lua.create_function_mut(move |lua, params: mlua::MultiValue| {
+            let wasm_args: Vec<_> = params
+                .iter()
+                .filter_map(|p| p.try_to_wasm_val().ok())
+                .collect();
+
+            let mut plugin = plugin_handle.lock();
+            let mut results = Vec::with_capacity(4);
+            plugin
+                .call(&wasm_args, &mut results)
+                .map_err(|e| anyhow!("Failed to call plugin: {e}"))?;
+
+            let lua_values: Vec<mlua::Value> = results
+                .into_iter()
+                .filter_map(|v| v.to_lua_value(lua).ok())
+                .collect();
+
+            Ok(mlua::MultiValue::from_vec(lua_values))
+        })?;
+
+        lua.globals().set(name, f)?;
+        Ok(())
     }
 }
