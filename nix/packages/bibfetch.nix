@@ -9,7 +9,6 @@
   luajit,
   pkg-config,
   makeWrapper,
-  buildEnv,
   ...
 }: let
   unwrapped = rustPlatform.buildRustPackage rec {
@@ -18,7 +17,7 @@
     buildInputs = [
       luajit
     ];
-    flags = [ "-p" name ];
+    flags = ["-p" name];
     nativeBuildInputs = [
       cargo
       rustc
