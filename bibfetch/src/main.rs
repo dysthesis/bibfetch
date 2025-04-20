@@ -5,38 +5,12 @@ use rayon::iter::{ParallelIterator,IntoParallelRefIterator};
 use serde_json::json;
 
 use crate::{
-    cli::{Args},
-    handler::Handler,
+    cli::Args,
+    handler::{Handler, HandlersPath},
 };
 
 const DEFAULT_HANDLERS_ENV_KEY: &str = "BIBFETCH_HANDLERS_DIR";
-#[derive(Debug)]
-/// Ensure that the path to the handlers exist
-pub struct HandlersPath(PathBuf);
-
-impl Into<PathBuf> for HandlersPath {
-    fn into(self) -> PathBuf {
-        self.0
-    }
-}
-
-impl TryFrom<String> for HandlersPath {
-    type Error = anyhow::Error;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        let path = PathBuf::from(value);
-
-        if !path.exists() {
-            return Err(anyhow!("Path to handlers does not exist!"));
-        }
-
-        if !path.is_dir() {
-            return Err(anyhow!("Path to handlers must be a directory!"));
-        }
-
-        Ok(HandlersPath(path))
-    }
-}
+const DEFAULT_PLUGINS_ENV_KEY: &str = "BIBFETCH_PLUGINS_DIR";
 
 mod cli;
 mod handler;
@@ -104,3 +78,4 @@ pub fn init_handlers(path: HandlersPath) -> anyhow::Result<Vec<Handler>> {
         .into_sorted_vec();
     Ok(result)
 }
+
