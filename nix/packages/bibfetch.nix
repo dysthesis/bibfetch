@@ -18,6 +18,7 @@
     buildInputs = [
       luajit
     ];
+    flags = [ "-p" name ];
     nativeBuildInputs = [
       cargo
       rustc

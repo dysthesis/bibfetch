@@ -1,7 +1,7 @@
 {pkgs, ...}: let
   mkPlugin = name:
     pkgs.runCommand "bibfetch-${name}" {
-      src = ../../../plugins/${name}.lua;
+      src = ../../../bibfetch/handlers/${name}.lua;
     }
     # sh
     ''
