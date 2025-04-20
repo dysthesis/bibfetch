@@ -25,8 +25,8 @@ impl TryFrom<PathBuf> for Plugin {
 
         let engine = wasmtime::Engine::new(&config)?;
         let component = wasmtime::component::Component::from_file(&engine, path)?;
-        let mut store = wasmtime::Store::new(&engine, ());
-        let mut linker = wasmtime::component::Linker::new(&engine);
+        let store = wasmtime::Store::new(&engine, ());
+        let linker = wasmtime::component::Linker::new(&engine);
 
         let instance = linker.instantiate(store, &component)?;
 
