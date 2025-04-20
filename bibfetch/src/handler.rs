@@ -129,9 +129,9 @@ impl TryFrom<PathBuf> for Handler {
 /// Ensure that the path to the handlers exist
 pub struct HandlersPath(PathBuf);
 
-impl Into<PathBuf> for HandlersPath {
-    fn into(self) -> PathBuf {
-        self.0
+impl From<HandlersPath> for PathBuf {
+    fn from(val: HandlersPath) -> Self {
+        val.0
     }
 }
 
