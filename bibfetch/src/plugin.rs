@@ -4,7 +4,7 @@ use anyhow::anyhow;
 
 pub struct Plugin {
     name: String,
-    instance: wasmtime::Instance,
+    instance: wasmtime::component::Instance,
 }
 
 impl TryFrom<PathBuf> for Plugin {
@@ -18,11 +18,18 @@ impl TryFrom<PathBuf> for Plugin {
             .ok_or(anyhow!("Failed to convert name to &str!"))?
             .to_string();
 
-        let engine = wasmtime::Engine::default();
-        let module = wasmtime::Module::from_file(&engine, path)?;
-        let mut store = wasmtime::Store::new(&engine, ());
+        // Enable components, which I think is what we want?
+        // TODO: actually figure out what component vs. module is
+        let mut config = wasmtime::Config::default();
+        config.wasm_component_model(true);
 
-        let instance = wasmtime::Instance::new(&mut store, &module, &[])?;
+        let engine = wasmtime::Engine::new(&config)?;
+        let component = wasmtime::component::Component::from_file(&engine, path)?;
+        let mut store = wasmtime::Store::new(&engine, ());
+        let mut linker = wasmtime::component::Linker::new(&engine);
+
+        let instance = linker.instantiate(store, &component)?;
+
         Ok(Plugin { name, instance })
     }
 }
